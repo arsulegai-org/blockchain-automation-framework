@@ -1,0 +1,24 @@
+metadata:
+  namespace: carrier-net
+  images:
+    fabrictools: hyperledger/fabric-tools:2.0.0
+    alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+storage:
+  class: carriersc
+  size: 256Mi
+vault:
+  role: vault-role
+  address: http://vault.default.svc.cluster.local:8200
+  authpath: carrier-net-auth
+  adminsecretprefix: secret/crypto/peerOrganizations/carrier-net/users/admin
+  orderersecretprefix: secret/crypto/peerOrganizations/carrier-net/orderer
+  serviceaccountname: vault-auth
+  imagesecretname: regcred
+  tls: false
+peer:
+  name: peer0
+  localmspid: carrierMSP
+  tlsstatus: true
+  address: peer0.carrier-net.peer.arun.pvt.wmtbaf.info:8443
+orderer:
+  address: orderer1.orderer.arun.pvt.wmtbaf.info:8443
