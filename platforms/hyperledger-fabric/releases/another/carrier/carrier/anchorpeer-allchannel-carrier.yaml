@@ -1,0 +1,48 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: anchorpeer-allchannel-carrier
+  namespace: carrier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: anchorpeer-allchannel-carrier
+  chart:
+    git: ssh://git@github.com/arsulegai/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/anchorpeer
+  values:
+    metadata:
+      namespace: carrier-net
+      images:
+        fabrictools: hyperledger/fabric-tools:2.0.0
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+
+    peer:
+      name: peer0
+      address: peer0.carrier-net.peer.arun.pvt.wmtbaf.info:8443
+      localmspid: carrierMSP
+      loglevel: debug
+      tlsstatus: true
+
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: carrier-net-auth
+      adminsecretprefix: secret/crypto/peerOrganizations/carrier-net/users/admin
+      orderersecretprefix: secret/crypto/peerOrganizations/carrier-net/orderer
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+
+    channel:
+      name: allchannel      
+    orderer:
+      address: orderer1.orderer.arun.pvt.wmtbaf.info:8443
+    anchorstx: |-
+      CtICChgKFggCGgYI2JaQ/QUiCmFsbGNoYW5uZWwStQIKsgIKCmFsbGNoYW5uZWwSYxJhCgtBcHBs
+      aWNhdGlvbhJSCAESTgoKY2Fycmllck1TUBJAGgcKA01TUBIAIg8KC0VuZG9yc2VtZW50EgAiCwoH
+      UmVhZGVycxIAIgsKB1dyaXRlcnMSACIKCgZBZG1pbnMSABq+ARK7AQoLQXBwbGljYXRpb24SqwEI
+      ARKmAQoKY2Fycmllck1TUBKXAQgBGksKC0FuY2hvclBlZXJzEjwSMgowCitwZWVyMC5jYXJyaWVy
+      LW5ldC5wZWVyLmFydW4ucHZ0LndtdGJhZi5pbmZvEPtBGgZBZG1pbnMaBwoDTVNQEgAiCgoGQWRt
+      aW5zEgAiDwoLRW5kb3JzZW1lbnQSACILCgdSZWFkZXJzEgAiCwoHV3JpdGVycxIAKgZBZG1pbnM=
+
