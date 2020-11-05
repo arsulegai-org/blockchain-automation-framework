@@ -1,0 +1,29 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: walmart-net-ca-tools
+  namespace: walmart-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: walmart-net-ca-tools
+  chart:
+    git: ssh://git@github.com/arsulegai/blockchain-automation-framework.git
+    ref: another
+    path: platforms/hyperledger-fabric/charts/catools
+  values:
+    metadata:
+      namespace: walmart-net
+      name: ca-tools
+
+    replicaCount: 1
+
+    image:
+      repository: hyperledger/fabric-ca-tools
+      tag: 1.2.0
+      pullPolicy: IfNotPresent
+      
+    storage:
+      storageclassname: walmartsc
+      storagesize: 512Mi
+
