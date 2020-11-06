@@ -1,0 +1,43 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: supplier-net-ca
+  namespace: supplier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: supplier-net-ca
+  chart:
+    git: ssh://git@github.com/arsulegai/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/ca    
+  values:
+    metadata:
+      namespace: supplier-net
+      images:
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+        ca: hyperledger/fabric-ca:1.4.5
+    server:
+      name: ca
+      tlsstatus: true
+      admin: supplier-admin
+    storage:
+      storageclassname: suppliersc
+      storagesize: 512Mi
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: supplier-net-auth
+      secretcert: secret/crypto/peerOrganizations/supplier-net/ca?ca.supplier-net-cert.pem
+      secretkey: secret/crypto/peerOrganizations/supplier-net/ca?supplier-net-CA.key
+      secretadminpass: secret/credentials/supplier-net/ca/supplier?user
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+    service:
+      servicetype: ClusterIP
+      ports:
+        tcp:
+          port: 7054
+    proxy:
+      provider: haproxy
+      type: peer
