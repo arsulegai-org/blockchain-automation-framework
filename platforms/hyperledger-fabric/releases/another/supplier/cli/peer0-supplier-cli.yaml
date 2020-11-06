@@ -1,0 +1,38 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: peer0-supplier-cli
+  namespace: supplier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: peer0-supplier-cli
+  chart:
+    git: ssh://git@github.com/arsulegai/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/fabric_cli    
+  values:
+    metadata:
+      namespace: supplier-net
+      images:
+        fabrictools: hyperledger/fabric-tools:2.0.0
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+    storage:
+      class: suppliersc
+      size: 256Mi
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: supplier-net-auth
+      adminsecretprefix: secret/crypto/peerOrganizations/supplier-net/users/admin
+      orderersecretprefix: secret/crypto/peerOrganizations/supplier-net/orderer
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+      tls: false
+    peer:
+      name: peer0
+      localmspid: supplierMSP
+      tlsstatus: true
+      address: peer0.supplier-net.supply.arun.pvt.wmtbaf.info:8443
+    orderer:
+      address: orderer1.orderer.arun.pvt.wmtbaf.info:8443
