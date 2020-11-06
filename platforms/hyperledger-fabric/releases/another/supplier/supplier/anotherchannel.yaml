@@ -1,0 +1,49 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: channel-supplier
+  namespace: supplier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: channel-supplier
+  chart:
+    git: ssh://git@github.com/arsulegai/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/create_channel   
+  values:
+    metadata:
+      namespace: supplier-net
+      images:
+        fabrictools: hyperledger/fabric-tools:2.0.0
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+    peer:
+      name: peer0
+      address: peer0.supplier-net:7051
+      localmspid: supplierMSP
+      loglevel: debug
+      tlsstatus: true
+
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: supplier-net-auth
+      adminsecretprefix: secret/crypto/peerOrganizations/supplier-net/users/admin
+      orderersecretprefix: secret/crypto/peerOrganizations/supplier-net/orderer 
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+
+    channel:
+      name: anotherchannel
+    orderer:
+      address: orderer2.orderer.arun.pvt.wmtbaf.info:8443
+    channeltx: |-
+      CuIDChwKGggCGgYI3pqW/QUiDmFub3RoZXJjaGFubmVsEsEDCr4DCg5hbm90aGVyY2hhbm5lbBJC
+      EjAKC0FwcGxpY2F0aW9uEiESDwoLc3VwcGxpZXJNU1ASABIOCgpjYXJyaWVyTVNQEgAaDgoKQ29u
+      c29ydGl1bRIAGucCErQCCgtBcHBsaWNhdGlvbhKkAggBEg8KC3N1cHBsaWVyTVNQEgASDgoKY2Fy
+      cmllck1TUBIAGiYKDENhcGFiaWxpdGllcxIWEgwKCgoGVjFfNF8yEgAaBkFkbWlucyIiCgdSZWFk
+      ZXJzEhcSDQgDEgkKB1JlYWRlcnMaBkFkbWlucyIiCgdXcml0ZXJzEhcSDQgDEgkKB1dyaXRlcnMa
+      BkFkbWlucyIiCgZBZG1pbnMSGBIOCAMSCgoGQWRtaW5zEAIaBkFkbWlucyI1ChRMaWZlY3ljbGVF
+      bmRvcnNlbWVudBIdEhMIAxIPCgtFbmRvcnNlbWVudBACGgZBZG1pbnMiLAoLRW5kb3JzZW1lbnQS
+      HRITCAMSDwoLRW5kb3JzZW1lbnQQAhoGQWRtaW5zKgZBZG1pbnMaLgoKQ29uc29ydGl1bRIgEh4K
+      HEFub3RoZXJTdXBwbHlDaGFpbkNvbnNvcnRpdW0=
