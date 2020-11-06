@@ -1,0 +1,63 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: supplier-peer1
+  namespace: supplier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: supplier-peer1
+  chart:
+    git: ssh://git@github.com/arsulegai/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/peernode    
+  values:
+    metadata:
+      namespace: supplier-net
+      images:
+        couchdb: hyperledger/fabric-couchdb:0.4.18
+        peer: hyperledger/fabric-peer:2.0.0
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+        
+    peer:
+      name: peer1
+      gossippeeraddress: peer0.supplier-net.supply.arun.pvt.wmtbaf.info:8443
+      gossipexternalendpoint: peer1.supplier-net.supply.arun.pvt.wmtbaf.info:8443
+      localmspid: supplierMSP
+      loglevel: info
+      tlsstatus: true
+      builder: hyperledger/fabric-ccenv:2.0.0
+      couchdb:
+        username: supplier-user
+
+    storage:
+      peer:
+        storageclassname: suppliersc
+        storagesize: 512Mi
+      couchdb:
+        storageclassname: suppliersc
+        storagesize: 1Gi
+
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: supplier-net-auth
+      secretprefix: secret/crypto/peerOrganizations/supplier-net/peers/peer1.supplier-net
+      secretambassador: secret/crypto/peerOrganizations/supplier-net/ambassador
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+      secretcouchdbpass: secret/credentials/supplier-net/couchdb/supplier?user
+
+    service:
+      servicetype: ClusterIP
+      ports:
+        grpc:
+          clusteripport: 7051
+        events:
+          clusteripport: 7053
+        couchdb:
+          clusteripport: 5984
+          
+    proxy:
+      provider: haproxy
+      external_url_suffix: supply.arun.pvt.wmtbaf.info
