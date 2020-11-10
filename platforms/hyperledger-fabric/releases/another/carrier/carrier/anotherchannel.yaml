@@ -1,0 +1,49 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: channel-carrier-anotherchannel
+  namespace: carrier-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: channel-carrier-anotherchannel
+  chart:
+    git: ssh://git@github.com/blockchain-wmt/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/create_channel   
+  values:
+    metadata:
+      namespace: carrier-net
+      images:
+        fabrictools: hyperledger/fabric-tools:2.0.0
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+    peer:
+      name: peer0
+      address: peer0.carrier-net:7051
+      localmspid: carrierMSP
+      loglevel: debug
+      tlsstatus: true
+
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: carrier-net-auth
+      adminsecretprefix: secret/crypto/peerOrganizations/carrier-net/users/admin
+      orderersecretprefix: secret/crypto/peerOrganizations/carrier-net/orderer 
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+
+    channel:
+      name: anotherchannel
+    orderer:
+      address: orderer1.orderer.arun.pvt.wmtbaf.info:8443
+    channeltx: |-
+      CtsDChwKGggCGgYIhJiq/QUiDmFub3RoZXJjaGFubmVsEroDCrcDCg5hbm90aGVyY2hhbm5lbBJC
+      EjAKC0FwcGxpY2F0aW9uEiESDgoKY2Fycmllck1TUBIAEg8KC3N1cHBsaWVyTVNQEgAaDgoKQ29u
+      c29ydGl1bRIAGuACErQCCgtBcHBsaWNhdGlvbhKkAggBEg4KCmNhcnJpZXJNU1ASABIPCgtzdXBw
+      bGllck1TUBIAGiYKDENhcGFiaWxpdGllcxIWEgwKCgoGVjFfNF8yEgAaBkFkbWlucyIiCgZBZG1p
+      bnMSGBIOCAMSCgoGQWRtaW5zEAIaBkFkbWlucyI1ChRMaWZlY3ljbGVFbmRvcnNlbWVudBIdEhMI
+      AxIPCgtFbmRvcnNlbWVudBACGgZBZG1pbnMiLAoLRW5kb3JzZW1lbnQSHRITCAMSDwoLRW5kb3Jz
+      ZW1lbnQQAhoGQWRtaW5zIiIKB1JlYWRlcnMSFxINCAMSCQoHUmVhZGVycxoGQWRtaW5zIiIKB1dy
+      aXRlcnMSFxINCAMSCQoHV3JpdGVycxoGQWRtaW5zKgZBZG1pbnMaJwoKQ29uc29ydGl1bRIZEhcK
+      FVN1cHBseUNoYWluQ29uc29ydGl1bQ==
