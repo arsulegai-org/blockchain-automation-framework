@@ -1,0 +1,43 @@
+apiVersion: flux.weave.works/v1beta1
+kind: HelmRelease
+metadata:
+  name: walmart-net-ca
+  namespace: walmart-net
+  annotations:
+    flux.weave.works/automated: "false"
+spec:
+  releaseName: walmart-net-ca
+  chart:
+    git: ssh://git@github.com/blockchain-wmt/baf.git
+    ref: master
+    path: platforms/hyperledger-fabric/charts/ca    
+  values:
+    metadata:
+      namespace: walmart-net
+      images:
+        alpineutils: index.docker.io/hyperledgerlabs/alpine-utils:1.0
+        ca: hyperledger/fabric-ca:1.4.5
+    server:
+      name: ca
+      tlsstatus: true
+      admin: walmart-admin
+    storage:
+      storageclassname: walmartsc
+      storagesize: 512Mi 
+    vault:
+      role: vault-role
+      address: http://vault.default.svc.cluster.local:8200
+      authpath: walmart-net-auth
+      secretcert: secret/crypto/ordererOrganizations/walmart-net/ca?ca.walmart-net-cert.pem
+      secretkey: secret/crypto/ordererOrganizations/walmart-net/ca?walmart-net-CA.key
+      secretadminpass: secret/credentials/walmart-net/ca/walmart?user
+      serviceaccountname: vault-auth
+      imagesecretname: regcred
+    service:
+      servicetype: ClusterIP
+      ports:
+        tcp:
+          port: 7054
+    proxy:
+      provider: haproxy
+      type: orderer
