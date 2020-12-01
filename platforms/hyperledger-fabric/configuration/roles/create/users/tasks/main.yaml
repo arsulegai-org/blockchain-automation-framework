@@ -1,0 +1,73 @@
+#############################################################################################
+# This role generates crypto material for organization users.
+#############################################################################################
+
+# Check if CA-tools pod is running
+- name: "Waiting for CA-tool in {{ item.name | lower }}-net"
+  include_role:
+    name: "{{ playbook_dir }}/../../shared/configuration/roles/check/helm_component"
+  vars:
+    component_type: "Pod"
+    namespace: "{{ item.name | lower }}-net"
+    component_name: "ca-tools"
+    check: "name"
+    label_selectors:
+      - name = {{ component_name }}
+  tags:
+    - notest
+
+# Ensure ca directory is present in build
+- name: Ensure ca directory exists
+  file:
+    path: "./build/crypto-config/peerOrganizations/{{ component_name }}/ca"
+    state: directory
+
+# Check if CA certs exists in vault, if not this should fail. If yes, get the certificate
+- name: Check if ca certs already created
+  shell: |
+    vault kv get -field=ca.{{ component_name }}-cert.pem secret/crypto/peerOrganizations/{{ component_name }}/ca > ca.{{ component_name }}-cert.pem
+    mv ca.{{ component_name }}-cert.pem ./build/crypto-config/peerOrganizations/{{ component_name }}/ca/
+  environment:
+    VAULT_ADDR: "{{ vault.url }}"
+    VAULT_TOKEN: "{{ vault.root_token }}"
+  changed_when: false
+
+# Check if CA key exists in vault, if not this should fail. If yes, get the certificate
+- name: Check if ca key already created
+  shell: |
+    vault kv get -field={{ component_name }}-CA.key secret/crypto/peerOrganizations/{{ component_name }}/ca > {{ component_name }}-CA.key
+    mv {{ component_name }}-CA.key ./build/crypto-config/peerOrganizations/{{ component_name }}/ca/
+  environment:
+    VAULT_ADDR: "{{ vault.url }}"
+    VAULT_TOKEN: "{{ vault.root_token }}"
+  changed_when: false
+
+# This task generates the crypto material by executing the generate-user-crypto.sh
+# script file present in the Organizations CA Tools CLI
+- name: Generate crypto material for organization peers
+  shell: |
+    export CA_TOOL_CLI=$(KUBECONFIG={{ kubernetes.config_file }} kubectl get po -n {{ component_name }} | grep "ca-tools" | awk '{print $1}')
+    KUBECONFIG={{ kubernetes.config_file }} kubectl exec -n {{ component_name }} ${CA_TOOL_CLI} -- /root/ca-tools/{{org_name|lower}}/./generate-user-crypto.sh peer {{component_name}} {{org_name|lower}} {{ user.identity }} {{org_name}} "{{subject}}"
+  loop: "{{ users }}"
+  loop_control:
+    - loop_var: user
+
+# This task copies the generated crypto material from the respective CA Tools CLI
+# to the Ansible container
+- name: Copy the crypto config folder from the ca tools
+  shell: |
+    export CA_TOOL_CLI=$(KUBECONFIG={{ kubernetes.config_file }}  kubectl get po -n {{ component_name }} | grep "ca-tools" | awk '{print $1}')
+    KUBECONFIG={{ kubernetes.config_file }} kubectl cp {{ component_name }}/${CA_TOOL_CLI}:crypto-config ./build/crypto-config
+
+# This task copies the generated user crypto materials from the build
+# directory to the Vault.
+- name: Copy the crypto materials from the build folder to the Vault
+  shell: |
+    vault write secret/crypto/peerOrganizations/{{ component_name }}/users/{{ user.identity }}/tls ca.crt="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/tls/ca.crt)" client.crt="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/tls/client.crt)" client.key="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/tls/client.key)"
+    vault write secret/crypto/peerOrganizations/{{ component_name }}/users/{{ user.identity }}/msp admincerts="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/msp/admincerts/{{ user.identity }}@{{ component_name }}-cert.pem)" cacerts="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/msp/cacerts/ca-{{ component_name }}-7054.pem)" keystore="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/msp/keystore/*_sk)" signcerts="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/msp/signcerts/cert.pem)" tlscacerts="$(cat ./build/crypto-config/peerOrganizations/{{ component_name }}/users/{{ user.identity }}@{{ component_name }}/tls/ca.crt)"
+  environment:
+    VAULT_ADDR: "{{ vault.url }}"
+    VAULT_TOKEN: "{{ vault.root_token }}"
+  loop: "{{ users }}"
+  loop_control:
+    - loop_var: user

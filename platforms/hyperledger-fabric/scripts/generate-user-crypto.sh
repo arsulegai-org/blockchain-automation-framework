@@ -1,19 +1,21 @@
 #!/bin/bash
 if [ $# -lt 6 ]; then
-	echo "Usage : . $0 orderer|peer <namespace> <nodename> <no of users: min 1> <affiliation> <subject>"
+	echo "Usage : . $0 orderer|peer <namespace> <nodename> <no of users: min 1>|<user-identity> <affiliation> <subject>"
 	exit
 fi
 
 set -x
 
-CURRENT_DIR=${PWD}
+# Input parameters
 FULLY_QUALIFIED_ORG_NAME=$2
-
 ORG_NAME=$3
 TYPE_FOLDER=$1s
-NO_OF_USERS=$4
+NUM_OR_USER_IDENTITY=$4
 AFFILIATION=$5
 SUBJECT=$6
+
+# Local variables
+CURRENT_DIR=${PWD}
 
 CA="ca.${FULLY_QUALIFIED_ORG_NAME}:7054"
 
@@ -25,16 +27,30 @@ else
 	ROOT_TLS_CERT="/crypto-config/$1Organizations/${FULLY_QUALIFIED_ORG_NAME}/ca/ca.${FULLY_QUALIFIED_ORG_NAME}-cert.pem"
 fi
 
-
-
 CAS_FOLDER="${HOME}/ca-tools/cas/ca-${ORG_NAME}"
 ORG_HOME="${HOME}/ca-tools/${ORG_NAME}"
 
+NUMBERS='^[0-9]+$'
+TOTAL_USERS=1
+CUSTOM_IDENTITY="true"
+if [[ ${NUM_OR_USER_IDENTITY} =~ ${NUMBERS} ]]; then
+  TOTAL_USERS=${NUM_OR_USER_IDENTITY}
+  CUSTOM_IDENTITY="false"
+fi
+
 ## Register and enroll users
-USER=0
-while [ ${USER} -lt ${NO_OF_USERS} ]; do
+CUR_USER=0
+while [ ${CUR_USER} -lt ${TOTAL_USERS} ]; do
 	## increment value first to avoid User0
-	let USER=USER+1
+	CUR_USER=$((CUR_USER + 1))
+
+	# Get the user identity
+	if [[ "${CUSTOM_IDENTITY}" == "true" ]]; then
+	  USER="${NUM_OR_USER_IDENTITY}"
+	else
+	  USER=USER+${CUR_USER}
+	fi
+
 	## Register and enroll User for Org
 	ORG_USER="User${USER}@${FULLY_QUALIFIED_ORG_NAME}"
 	ORG_USERPASS="User${USER}@${FULLY_QUALIFIED_ORG_NAME}-pw"
